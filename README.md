@@ -10,6 +10,9 @@ An example App to test and evaluate the use of parallel processing in the MoveAp
 ## Documentation
 The sole purpose of this App is to provide a simple test-case for demonstrating parallel processing within the MoveApps framework. Parallelization is set via the `R` package [`furrr`](https://furrr.futureverse.org/index.html), which offers map-like functions to easily distribute and run tasks in parallel.
 
+The output data is a replicate of the input data. Relevant outputs are provided in the App's Logs, which include:
+- The number of cores available
+- Run-time comparison between parallel and sequential processing
 
 ### Input data
 
