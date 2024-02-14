@@ -16,7 +16,6 @@ rFunction <- function(data) {
   trk_col <- mt_track_id_column(data)
   
   # set progress bar
-  progressr::handlers(global = TRUE)
   progressr::handlers("cli")
   
   # Parallel Processing ------------------------------------------------------------
@@ -32,36 +31,43 @@ rFunction <- function(data) {
 
   logger.info("Performing track-level tasks in parallel")  
   
-  # initiate progress signaler
-  prg_prl <- progressr::progressor(steps = mt_n_tracks(data))
-  
   # parallel processing - one track id per worker
-  prl_start <- Sys.time()
+  with_progress({
+    
+    p <- progressr::progressor(steps = mt_n_tracks(data))
+    
+    prl_start <- Sys.time()
+    
+    data_par <- data |> 
+      dplyr::group_by(.data[[trk_col]]) |>
+      dplyr::group_split() |> 
+      furrr::future_map(.f = foo, p = p)
+    
+    prl_end <- Sys.time()
+  })
   
-  data_par <- data |> 
-    dplyr::group_by(.data[[trk_col]]) |>
-    dplyr::group_split() |> 
-    furrr::future_map(.f = foo, p = prg_prl)
-  
-  prl_end <- Sys.time()
   
   future::plan("sequential")
   
   # Sequential Processing ------------------------------------------------------------
   logger.info("Performing track-level tasks sequentially")
   
-  # reset progress signaler
-  prg_seq <- progressr::progressor(steps = mt_n_tracks(data))
-  
   # repeat via sequential processing
-  seq_start <- Sys.time()
+  with_progress({
+    
+    p <- progressr::progressor(steps = mt_n_tracks(data))
+    
+    seq_start <- Sys.time()
+    
+    data_seq <- data |> 
+      dplyr::group_by(.data[[trk_col]]) |>
+      dplyr::group_split() |> 
+      furrr::future_map(.f = foo, p = p)
+    
+    seq_end <- Sys.time()
+  })
+    
   
-  data_seq <- data |> 
-    dplyr::group_by(.data[[trk_col]]) |>
-    dplyr::group_split() |> 
-    furrr::future_map(.f = foo, p = prg_seq)
-  
-  seq_end <- Sys.time()
   
   # Report runtimes -------------------------------------------------------------
   logger.info(
