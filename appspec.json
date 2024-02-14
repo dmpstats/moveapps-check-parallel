@@ -1,26 +1,6 @@
 {
-  "version": "1.2",
+  "version": "0.1",
   "settings": [
-    {
-      "id": "sdk",
-      "name": "The name of the MoveApps SDK",
-      "description": "Showcase requesting a string input from the users of your app.",
-      "defaultValue": "MoveApps SDK",
-      "type": "STRING"
-    },
-    {
-      "id": "year",
-      "name": "The year",
-      "description": "Insert description for the year setting setting",
-      "defaultValue": 2022,
-      "type": "INTEGER"
-    },
-    {
-      "id": "yourLocalFileSettingId",
-      "name": "Personalization",
-      "description": "You can personalize the dashboard by providing a file named 'sample.txt'",
-      "type": "LOCAL_FILE"
-    }
   ],
   "dependencies": {
     "R": [
@@ -29,49 +9,53 @@
       },
       {
         "name": "move2"
+      },
+      {
+        "name": "furrr"
+      },
+      {
+        "name": "future"
+      },
+      {
+        "name": "dplyr"
+      },
+      {
+        "name": "progressr"
+      },
+      {
+        "name": "units"
       }
     ]
   },
-  "providedAppFiles": [
-    {
-      "settingId": "yourLocalFileSettingId",
-      "from": "data/local_app_files/provided-app-files/yourLocalFileSettingId/"
-    }
-  ],
   "license": {
     "key": "MIT"
   },
   "language": "eng",
   "keywords": [
-    "example",
-    "template"
+    "parallel processing",
+    "example App"
   ],
   "people": [
     {
-      "firstName": "Charles",
+      "firstName": "Bruno",
       "middleInitials": null,
-      "lastName": "Darwin",
-      "email": "creator@example.com",
+      "lastName": "Caneco",
+      "email": "bruno@dmpstats.co.uk",
       "roles": [
         "author",
         "creator"
       ],
       "orcid": null,
-      "affiliation": null,
-      "affiliationRor": null
+      "affiliation": "DMP Statistical Solutions"
     }
   ],
   "funding": [
     {
-      "name": "funder name",
-      "comment": "grant for App"
+      "name": "North Carolina Zoo, US",
+      "comment": null
     }
   ],
-  "references": [
-    {
-      "type": "IsDescribedBy",
-      "note": "Darwin, C. 1900. The creation. Journal XY. 1-2",
-      "url": "https://anylink.xyz"
-    }
-  ]
+    "documentation": {
+    "url": "https://github.com/dmpstats/moveapps-check-parallel"
+  }
 }

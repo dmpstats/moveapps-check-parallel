@@ -1,37 +1,99 @@
-library('move2')
-library('lubridate')
+library(move2)
+library(lubridate)
+library(furrr)
+library(future)
+library(dplyr)
+library(progressr)
+library(units)
 
-## The parameter "data" is reserved for the data object passed on from the previous app
+rFunction <- function(data) {
+  
+  logger.info("Okay, let's check if parallelization is working!")
+  
+  # Set Globals ------------------------------------------------------------
+  
+  # track column
+  trk_col <- mt_track_id_column(data)
+  
+  # set progress bar
+  progressr::handlers(global = TRUE)
+  progressr::handlers("cli")
+  
+  # Parallel Processing ------------------------------------------------------------
+  
+  #' get available cores from {parallelly} via {future}, which  is safe to use in
+  #' container environments (e.g. Docker)
+  n_workers <- future::availableCores(omit = 1)
+  
+  logger.info(paste("Number of cores currently available for parallel processing: ", n_workers))
+  
+  #' setting parallel processing strategy
+  future::plan("multisession", workers = n_workers)
 
-# to display messages to the user in the log file of the App in MoveApps
-# one can use the function from the logger.R file:
-# logger.fatal(), logger.error(), logger.warn(), logger.info(), logger.debug(), logger.trace()
+  logger.info("Performing track-level tasks in parallel")  
+  
+  # initiate progress signaler
+  prg_prl <- progressr::progressor(steps = mt_n_tracks(data))
+  
+  # parallel processing - one track id per worker
+  prl_start <- Sys.time()
+  
+  data_par <- data |> 
+    dplyr::group_by(.data[[trk_col]]) |>
+    dplyr::group_split() |> 
+    furrr::future_map(.f = foo, p = prg_prl)
+  
+  prl_end <- Sys.time()
+  
+  future::plan("sequential")
+  
+  # Sequential Processing ------------------------------------------------------------
+  logger.info("Performing track-level tasks sequentially")
+  
+  # reset progress signaler
+  prg_seq <- progressr::progressor(steps = mt_n_tracks(data))
+  
+  # repeat via sequential processing
+  seq_start <- Sys.time()
+  
+  data_seq <- data |> 
+    dplyr::group_by(.data[[trk_col]]) |>
+    dplyr::group_split() |> 
+    furrr::future_map(.f = foo, p = prg_seq)
+  
+  seq_end <- Sys.time()
+  
+  # Report runtimes -------------------------------------------------------------
+  logger.info(
+    paste0(
+      "Runtime:\n",
+      "\t- Parallel Processing: ", round(difftime(prl_end, prl_start, units = "s"), 3), "secs\n",
+      "\t- Sequential Processing: ", round(difftime(seq_end, seq_start, units = "s"), 3), "secs\n"
+    )
+  )
+  
+  return(data)
+}
 
-# Showcase injecting app setting (parameter `year`)
-rFunction = function(data, sdk, year, ...) {
-  logger.info(paste("Welcome to the", sdk))
-  result <- if (any(lubridate::year(mt_time(data)) == year)) { 
-    data[lubridate::year(mt_time(data)) == year,]
-  } else {
-    NULL
-  }
-  if (!is.null(result)) {
-    # Showcase creating an app artifact. 
-    # This artifact can be downloaded by the workflow user on Moveapps.
-    artifact <- appArtifactPath("plot.png")
-    logger.info(paste("plotting to artifact:", artifact))
-    png(artifact)
-    plot(result)
-    dev.off()
-  } else {
-    logger.warn("nothing to plot")
-  }
-  # Showcase to access a file ('auxiliary files') that is 
-  # a) provided by the app-developer and 
-  # b) can be overridden by the workflow user.
-  fileName <- paste0(getAppFilePath("yourLocalFileSettingId"), "sample.txt")
-  logger.info(readChar(fileName, file.info(fileName)$size))
 
-  # provide my result to the next app in the MoveApps workflow
-  return(result)
+
+#' Simple function with a couple of calls to move2, dplyr and lubridate
+#' functions. Also testing the incorporation of a progress bar
+foo <- function(dt, p){
+  
+  logger.info(paste0("  |> Processing track ", unique(mt_track_id(dt))))
+
+  tm_col <- move2::mt_time_column(dt)
+  speed_lim <- units::as_units(2, "km/h")
+
+  dt$speed <- move2::mt_speed(dt, units = "km/h")
+
+  dt <- dt |>
+    dplyr::mutate(hour = lubridate::hour(.data[[tm_col]])) |>
+    dplyr::filter(speed > speed_lim)
+
+  Sys.sleep(3)
+  p()
+  
+  return(dt)
 }
