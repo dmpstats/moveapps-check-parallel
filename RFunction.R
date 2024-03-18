@@ -27,7 +27,7 @@ rFunction <- function(data) {
   logger.info(paste("Number of cores currently available for parallel processing: ", n_workers))
   
   #' setting parallel processing strategy
-  future::plan("multisession", workers = n_workers)
+  future::plan("cluster", workers = n_workers)
 
   logger.info("Performing track-level tasks in parallel")  
   
@@ -40,7 +40,7 @@ rFunction <- function(data) {
     
     data_par <- data |> 
       dplyr::group_by(.data[[trk_col]]) |>
-      dplyr::group_split() |> 
+      dplyr::group_split() |>
       furrr::future_map(.f = foo, p = p)
     
     prl_end <- Sys.time()
@@ -98,7 +98,7 @@ foo <- function(dt, p){
     dplyr::mutate(hour = lubridate::hour(.data[[tm_col]])) |>
     dplyr::filter(speed > speed_lim)
 
-  Sys.sleep(3)
+  Sys.sleep(5)
   p()
   
   return(dt)
